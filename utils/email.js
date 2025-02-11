@@ -34,6 +34,3 @@ const sendEmail = async(option) => {
 }
 
 module.exports = sendEmail;
-//ไอกากตูม
-
-//อะไรเนี่ย

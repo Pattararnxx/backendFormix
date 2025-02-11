@@ -1,46 +1,19 @@
-import bcrypt from 'bcrypt';
+const mysql = require('mysql2');
 
-// export const users = async () => {
-//     return [
-//         {
-//             email:"pattararnx@gmail.com",
-//             password: await bcrypt.hash('123456789', 10)
-//         }
-//     ];
-// }
-export const users = [
-    {
-        email:"pattararnx@gmail.com",
-        password: bcrypt.hashSync('123456789', 10) 
-    }
-];
+const connection = mysql.createConnection({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASS,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT 
+});
 
-export const publicPosts = [
-    {
-        title: "Free Tips on Development",
-        content: "These are some tips"
-    },
-    {
-        title: "Free Tips on Development",
-        content: "These are some tips"
-    },
-    {
-        title: "Free Tips on Development",
-        content: "These are some tips"
+connection.connect((err) => {
+    if (err) {
+        console.error('Error connecting to MySQL:', err);
+        return;
     }
-]
+    console.log('MySQL successfully connected!');
+});
 
-export const privatePosts = [
-    {
-        title:"Paid Tips on Development",
-        content:"These are some tips"
-    },
-    {
-        title:"Paid Tips on Development",
-        content: "These are some tips"
-    },
-    {
-        title:"Paid Tips on Development",
-        content: "These are some tips"
-    }
-]
+module.exports = connection;
