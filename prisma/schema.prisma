@@ -48,7 +48,7 @@ model Option {
 }
 
 model GetAnswer {
-
+  id Int @id @default(autoincrement())
 }
 
 
