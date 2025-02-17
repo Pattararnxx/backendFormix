@@ -29,7 +29,7 @@ model Form {
   user User @relation(fields: [userID], references: [id])
   title String
   color String
-  active Boolean @default(false) //for check active form
+  active Boolean @default(true) //for check active form
   team String
   total Int //count all forms
   question Question[]
@@ -60,9 +60,7 @@ model Response {
   formID String
   form Form @relation(fields: [formID], references: [id])
   answer Json
-  active Int //show forms active
-  title String //form's name
-  status Boolean //the form active or not
+  createdAt DateTime @default(now())
 }
 
 
