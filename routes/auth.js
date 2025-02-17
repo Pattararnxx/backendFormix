@@ -15,7 +15,7 @@ router.post('/signup', async (req, res) => {
     }
 
     // ✅ Check if user exists in MySQL
-    connection.query("SELECT * FROM users WHERE email = ?", [email], async (err, results) => {
+    connection.query("SELECT * FROM User WHERE email = ?", [email], async (err, results) => {
         if (err) return res.status(500).json({ msg: "Database error", error: err });
 
         if (results.length > 0) {
@@ -26,7 +26,7 @@ router.post('/signup', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // ✅ Insert new user into MySQL
-        connection.query("INSERT INTO users (email, password) VALUES (?, ?)", [email, hashedPassword], (err, result) => {
+        connection.query("INSERT INTO User (email, password) VALUES (?, ?)", [email, hashedPassword], (err, result) => {
             if (err) return res.status(500).json({ msg: "Database error", error: err });
 
             const token = JWT.sign({ email }, process.env.JWT_SECRET, { expiresIn: "10h" });
@@ -39,7 +39,7 @@ router.post('/signup', async (req, res) => {
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
-    connection.query("SELECT * FROM users WHERE email = ?", [email], async (err, results) => {
+    connection.query("SELECT * FROM User WHERE email = ?", [email], async (err, results) => {
         if (err) return res.status(500).json({ msg: "Database error", error: err });
 
         if (results.length === 0) {
@@ -62,7 +62,7 @@ router.post('/login', async (req, res) => {
 router.post('/forgot-password', async (req, res) => {
     const { email } = req.body;
 
-    connection.query("SELECT * FROM users WHERE email = ?", [email], async (err, results) => {
+    connection.query("SELECT * FROM User WHERE email = ?", [email], async (err, results) => {
         if (err) return res.status(500).json({ msg: "Database error", error: err });
 
         if (results.length === 0) {
@@ -97,7 +97,7 @@ router.post('/reset-password/:token', async (req, res) => {
         const decoded = JWT.verify(token, process.env.JWT_SECRET);
 
         // FIND USER IN DATABASE
-        connection.query("SELECT * FROM users WHERE email = ?", [decoded.email], async (err, results) => {
+        connection.query("SELECT * FROM User WHERE email = ?", [decoded.email], async (err, results) => {
             if (err) return res.status(500).json({ msg: "Database error", error: err });
 
             if (results.length === 0) {
@@ -106,7 +106,7 @@ router.post('/reset-password/:token', async (req, res) => {
 
             // UPDATE RESET PASSWORD
             const hashedPassword = await bcrypt.hash(newPassword, 10);
-            connection.query("UPDATE users SET password = ? WHERE email = ?", [hashedPassword, decoded.email], (err, result) => {
+            connection.query("UPDATE User SET password = ? WHERE email = ?", [hashedPassword, decoded.email], (err, result) => {
                 if (err) return res.status(500).json({ msg: "Database error", error: err });
 
                 res.json({ msg: "Password has been reset successfully" });
@@ -119,7 +119,7 @@ router.post('/reset-password/:token', async (req, res) => {
 
 
 router.get("/all", async (req, res) => {
-    connection.query("SELECT email FROM users", (err, results) => {
+    connection.query("SELECT email FROM User", (err, results) => {
         if (err) return res.status(500).json({ msg: "Database error", error: err });
 
         res.json(results);

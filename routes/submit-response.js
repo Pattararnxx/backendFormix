@@ -4,7 +4,7 @@ const prisma = require("../prisma");
 const router = express.Router();
 
 router.post("/submit-response", async (req, res) => {
-    const { form, response} = req.body;
+    const {form, response} = req.body;
     try {
         const question = await prisma.form.findMany ({
             where: { formID },
