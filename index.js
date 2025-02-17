@@ -7,8 +7,8 @@ const myMiddleware = require('./middleware')
 
 const auth = require("./routes/auth");
 const post = require("./routes/post");
-const create = require("./form/create-form");
-const submit = require("./form/submit-response");
+const create = require("./routes/create-form");
+const submit = require("./routes/submit-response");
 const app = express();
 
 app.use(express.json());
