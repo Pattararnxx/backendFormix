@@ -1,11 +1,11 @@
 const router = require("express").Router();
 const { check, validationResult } = require("express-validator");
-// const users = require("../db");
-//const { users } = require("../index");
 const sendEmail = require('../utils/email');
 const bcrypt = require("bcrypt");
-const JWT = require("jsonwebtoken");
 const connection = require("../db");
+const JWT = require("jsonwebtoken");
+require("dotenv").config();
+
 
 router.post('/signup', async (req, res) => {
     const { email, password, confirmPassword } = req.body;

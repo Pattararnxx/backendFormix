@@ -1,0 +1,54 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+//form
+
+model Form {
+  id String @id @default(uuid())
+  title String
+  question Question[]
+  response Response[]
+}
+
+model Question {
+  id Int @id @default(autoincrement())
+  formID String
+  form Form @relation(fields: [formID], references: [id])
+  title String
+  type String
+  required Boolean
+  options Option[]
+  limitAns Int @default(1)
+}
+
+model Response {
+  id String @id @default(uuid())
+  formID String
+  form Form @relation(fields: [formID], references: [id])
+  answer Json
+}
+
+model Option {
+  id Int @id @default(autoincrement())
+  limit Int
+  questionID Int
+  question Question @relation(fields: [questionID], references: [id], onDelete: Cascade)
+}
+
+model GetAnswer {
+
+}
+
+

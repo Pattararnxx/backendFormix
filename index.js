@@ -1,24 +1,30 @@
 const express = require("express");
 const cors = require("cors");
+const prisma = require("./prisma");
+const connection = require("./db"); 
+const mysql = require('mysql2');
+
 const auth = require("./routes/auth");
 const post = require("./routes/post");
-const forms = require("./routes/forms");
-const app = express();
-const mysql = require('mysql2');
-const connection = require("./db"); // ✅ Import db.js instead of defining connection in index.js
+const forms = require("./form/create-form");
 
-app.use(cors());
-// app.use(cors({ origin: "http://localhost:8889", credentials: true }));
+const app = express();
+
+app.use(express.json());
+app.use(cors({
+    origin: "http://localhost:3000", 
+    credentials: true
+}));
 app.use(express.json());
 app.use("/auth", auth);
 app.use("/posts", post);
-app.use("/forms", forms);
+app.use("/create-form", forms);
 
 //Check mySQL connection
 connection.connect((err, connection) => {
     if(err) {
         console.log('Error connecting to MySQL database = ', err);
-        return;
+        process.exit(1);
     }
     console.log('MySQL successfully connected!');
 })
@@ -28,5 +34,12 @@ connection.connect((err, connection) => {
 app.listen(5001, () => {
     console.log("Now running on port 5001")
 })
+
+
+process.on("SIGINT", async () => {
+    await prisma.$disconnect(); // ✅ ปิด Prisma ก่อนปิดเซิร์ฟเวอร์
+    console.log("🔴 Prisma Client disconnected");
+    process.exit(0);
+});
 
 module.exports = connection;
