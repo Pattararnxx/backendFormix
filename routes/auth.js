@@ -29,8 +29,7 @@ router.post('/signup', async (req, res) => {
         connection.query("INSERT INTO User (email, password) VALUES (?, ?)", [email, hashedPassword], (err, result) => {
             if (err) return res.status(500).json({ msg: "Database error", error: err });
 
-            const token = JWT.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: "10h" });
-            res.json({ token });
+            res.json({ msg: "Signup successful. Please login!" });
         });
     });
 });
