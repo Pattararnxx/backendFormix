@@ -20,22 +20,21 @@ model User {
   email String
   name String?
   password String
+  total Int //count all forms
   forms Form[]
   createdAt DateTime @default(now())
 }
 
 model Form {
   id String @id @default(uuid())
-  userID Int
+  userID String
   user User @relation(fields: [userID], references: [id])
   title String
   description String?
   color String
   active Boolean @default(true) //for check active form
   team String
-  total Int //count all forms
   question Question[]
-  response Response[]
   createdAt DateTime @default(now())
 }
 

@@ -6,34 +6,51 @@ const connection = require("../db");
 const JWT = require("jsonwebtoken");
 require("dotenv").config();
 
-
 router.post('/signup', async (req, res) => {
+    console.log("Start signup process");
+
+    // ตอนนี้ variable name สำคัญเพราะต้องใช้ใน INSERT
+    const name = "username";
     const { email, password, confirmPassword } = req.body;
 
+    console.log("Request data:", { email, password, confirmPassword });
+
+    // ตรวจสอบรหัสผ่าน
     if (password !== confirmPassword) {
+        console.log("Passwords do not match");
         return res.status(400).json({ errors: [{ msg: "Passwords do not match" }] });
     }
 
-    // ✅ Check if user exists in MySQL
+    // ตรวจสอบหากมีผู้ใช้งานที่มีอีเมลนี้อยู่แล้วในฐานข้อมูล
     connection.query("SELECT * FROM User WHERE email = ?", [email], async (err, results) => {
-        if (err) return res.status(500).json({ msg: "Database error", error: err });
+        if (err) {
+            console.error("Error querying database:", err);
+            return res.status(500).json({ msg: "Database error", error: err });
+        }
+        
+        console.log("User search results:", results);
 
         if (results.length > 0) {
+            console.log("User already exists");
             return res.status(400).json({ errors: [{ msg: "This user already exists" }] });
         }
 
-        // ✅ Hash password
+        // แฮชรหัสผ่าน
         const hashedPassword = await bcrypt.hash(password, 10);
+        console.log("Password hashed successfully");
 
-        // ✅ Insert new user into MySQL
-        connection.query("INSERT INTO User (email, password) VALUES (?, ?)", [email, hashedPassword], (err, result) => {
-            if (err) return res.status(500).json({ msg: "Database error", error: err });
+        // แทรกผู้ใช้ใหม่เข้าไปใน MySQL โดยแทรกค่าของ name ด้วย
+        connection.query("INSERT INTO User (name, email, password) VALUES (?, ?, ?)", [name, email, hashedPassword], (err, result) => {
+            if (err) {
+                console.error("Error inserting user into database:", err);
+                return res.status(500).json({ msg: "Database error", error: err });
+            }
 
+            console.log("User inserted into database successfully", result);
             res.json({ msg: "Signup successful. Please login!" });
         });
     });
 });
-
 
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
