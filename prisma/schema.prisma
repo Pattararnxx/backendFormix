@@ -18,6 +18,7 @@ datasource db {
 model User {
   id Int @id @default(autoincrement())
   email String
+  name String?
   password String
   forms Form[]
   createdAt DateTime @default(now())
@@ -28,6 +29,7 @@ model Form {
   userID Int
   user User @relation(fields: [userID], references: [id])
   title String
+  description String?
   color String
   active Boolean @default(true) //for check active form
   team String

@@ -29,7 +29,7 @@ router.post('/signup', async (req, res) => {
         connection.query("INSERT INTO User (email, password) VALUES (?, ?)", [email, hashedPassword], (err, result) => {
             if (err) return res.status(500).json({ msg: "Database error", error: err });
 
-            const token = JWT.sign({ email }, process.env.JWT_SECRET, { expiresIn: "10h" });
+            const token = JWT.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: "10h" });
             res.json({ token });
         });
     });
@@ -66,7 +66,7 @@ router.post('/forgot-password', async (req, res) => {
         if (err) return res.status(500).json({ msg: "Database error", error: err });
 
         if (results.length === 0) {
-            return res.status(400).json({ msg: "Email not found" });
+            return res.status(400).json({ msg: "If this email exists, a reset link will be sent."  });
         }
 
         const resetToken = JWT.sign({ email }, process.env.JWT_SECRET, { expiresIn: "30m" });

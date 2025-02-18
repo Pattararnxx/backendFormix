@@ -1,6 +1,6 @@
 const JWT = require("jsonwebtoken");
 const connection = require("../db");
-const prisma = require("./prisma");
+const prisma = require("../prisma");
 
 module.exports = async (req, res, next)=>{
     const token = req.header('x-auth-token');

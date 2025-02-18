@@ -3,12 +3,12 @@ const cors = require("cors");
 const prisma = require("./prisma");
 const connection = require("./db"); 
 const mysql = require('mysql2');
-const myMiddleware = require('./middleware')
+const myMiddleware = require('./middleware/checkAuth')
 
 const auth = require("./routes/auth");
 const post = require("./routes/post");
-const create = require("./routes/create-form");
-const submit = require("./routes/submit-response");
+const form = require("./routes/form");
+const response = require("./routes/response");
 const app = express();
 
 app.use(express.json());
@@ -19,8 +19,10 @@ app.use(cors({
 app.use(myMiddleware);
 app.use("/auth", auth);
 app.use("/posts", post);
-app.use("/create-form", create);
-app.use("/submit-response", submit);
+app.use("/form", form);
+app.use("/response", response);
+app.use("/response", response);
+
 
 //Check mySQL connection
 connection.connect((err, connection) => {
