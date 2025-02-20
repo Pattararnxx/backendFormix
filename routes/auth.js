@@ -1,146 +1,259 @@
-const router = require("express").Router();
-const { check, validationResult } = require("express-validator");
-const sendEmail = require('../utils/email');
+const express = require("express");
 const bcrypt = require("bcrypt");
-const connection = require("../db");
 const JWT = require("jsonwebtoken");
+const { check, validationResult } = require("express-validator"); // ✅ ใช้ express-validator
+const prisma = require("../prisma");
+const sendEmail = require("../email");
 require("dotenv").config();
 
-router.post('/signup', async (req, res) => {
-    console.log("Start signup process");
+const router = express.Router();
 
-    // ตอนนี้ variable name สำคัญเพราะต้องใช้ใน INSERT
-    const name = "username";
-    const { email, password, confirmPassword } = req.body;
-
-    console.log("Request data:", { email, password, confirmPassword });
-
-    // ตรวจสอบรหัสผ่าน
-    if (password !== confirmPassword) {
-        console.log("Passwords do not match");
-        return res.status(400).json({ errors: [{ msg: "Passwords do not match" }] });
-    }
-
-    // ตรวจสอบหากมีผู้ใช้งานที่มีอีเมลนี้อยู่แล้วในฐานข้อมูล
-    connection.query("SELECT * FROM User WHERE email = ?", [email], async (err, results) => {
-        if (err) {
-            console.error("Error querying database:", err);
-            return res.status(500).json({ msg: "Database error", error: err });
-        }
-        
-        console.log("User search results:", results);
-
-        if (results.length > 0) {
-            console.log("User already exists");
-            return res.status(400).json({ errors: [{ msg: "This user already exists" }] });
+router.post(
+    "/signup",
+    [
+        check("name", "Name is required").not().isEmpty(),
+        check("email", "Invalid email format").isEmail(),
+        check("password", "Password must be at least 10 characters long").isLength({ min: 10 }),
+        check("confirmPassword", "Passwords do not match").custom((value, { req }) => value === req.body.password)
+    ],
+    async (req, res) => {
+        console.log("📌 Start signup process");
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            console.log("❌ Validation errors:", errors.array());
+            return res.status(400).json({ errors: errors.array() });
         }
 
-        // แฮชรหัสผ่าน
-        const hashedPassword = await bcrypt.hash(password, 10);
-        console.log("Password hashed successfully");
-
-        // แทรกผู้ใช้ใหม่เข้าไปใน MySQL โดยแทรกค่าของ name ด้วย
-        connection.query("INSERT INTO User (name, email, password) VALUES (?, ?, ?)", [name, email, hashedPassword], (err, result) => {
-            if (err) {
-                console.error("Error inserting user into database:", err);
-                return res.status(500).json({ msg: "Database error", error: err });
-            }
-
-            console.log("User inserted into database successfully", result);
-            res.json({ msg: "Signup successful. Please login!" });
-        });
-    });
-});
-
-router.post('/login', async (req, res) => {
-    const { email, password } = req.body;
-
-    connection.query("SELECT * FROM User WHERE email = ?", [email], async (err, results) => {
-        if (err) return res.status(500).json({ msg: "Database error", error: err });
-
-        if (results.length === 0) {
-            return res.status(400).json({ errors: [{ msg: "Invalid Credentials" }] });
-        }
-
-        let user = results[0]; // ดึงข้อมูล user จาก MySQL
-        let isMatch = await bcrypt.compare(password, user.password);
-
-        if (!isMatch) {
-            return res.status(400).json({ errors: [{ msg: "Invalid Credentials" }] });
-        }
-
-        const token = JWT.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: "10h" });
-        res.json({ token });
-    });
-});
-
-
-router.post('/forgot-password', async (req, res) => {
-    const { email } = req.body;
-
-    connection.query("SELECT * FROM User WHERE email = ?", [email], async (err, results) => {
-        if (err) return res.status(500).json({ msg: "Database error", error: err });
-
-        if (results.length === 0) {
-            return res.status(400).json({ msg: "If this email exists, a reset link will be sent."  });
-        }
-
-        const resetToken = JWT.sign({ email }, process.env.JWT_SECRET, { expiresIn: "30m" });
-        const resetLink = `http://formix.com/reset-password/${resetToken}`;
+        const { name, email, password } = req.body;
 
         try {
-            await sendEmail({
-                email: email,
-                subject: "Password Reset Request",
-                message: `Click the link below to reset your password:\n\n${resetLink}`
-            });
+            // 🔍 ตรวจสอบว่ามี Email นี้อยู่แล้วหรือไม่
+            const existingUser = await prisma.user.findUnique({ where: { email } });
 
-            res.status(200).json({ status: 'success', message: 'Password reset link sent to user email' });
-        } catch (error) {
-            console.error("Email sending error:", error);
-            return res.status(500).json({ msg: "Failed to send password reset email" });
-        }
-    });
-});
-
-
-router.post('/reset-password/:token', async (req, res) => {
-    const { token } = req.params;
-    const { newPassword } = req.body;
-
-    try {
-        // CHECK TOKEN
-        const decoded = JWT.verify(token, process.env.JWT_SECRET);
-
-        // FIND USER IN DATABASE
-        connection.query("SELECT * FROM User WHERE email = ?", [decoded.email], async (err, results) => {
-            if (err) return res.status(500).json({ msg: "Database error", error: err });
-
-            if (results.length === 0) {
-                return res.status(400).json({ msg: "Invalid token" });
+            if (existingUser) {
+                console.log("❌ User already exists");
+                return res.status(400).json({ errors: [{ msg: "User already exists" }] });
             }
 
-            // UPDATE RESET PASSWORD
-            const hashedPassword = await bcrypt.hash(newPassword, 10);
-            connection.query("UPDATE User SET password = ? WHERE email = ?", [hashedPassword, decoded.email], (err, result) => {
-                if (err) return res.status(500).json({ msg: "Database error", error: err });
+            // 🔒 Hash Password
+            const hashedPassword = await bcrypt.hash(password, 10);
+            console.log("✅ Password hashed successfully");
 
-                res.json({ msg: "Password has been reset successfully" });
+            // 🆕 สร้างผู้ใช้ใหม่ในฐานข้อมูล
+            const newUser = await prisma.user.create({
+                data: { name, email, password: hashedPassword }
             });
-        });
+
+            console.log("✅ User inserted into database successfully:", newUser);
+
+            // 🎫 สร้าง JWT Token ให้ผู้ใช้ใหม่
+            const token = JWT.sign({ id: newUser.id }, process.env.JWT_SECRET, { expiresIn: "1h" });
+
+            res.json({
+                msg: "Signup successful. Please login!",
+                token,
+                userID: newUser.id
+            });
+        } catch (error) {
+            console.error("❌ Signup error:", error);
+            res.status(500).json({ msg: "Server error", error });
+        }
+    }
+);
+
+router.post(
+    "/login",
+    [
+        check("email", "Invalid email format").isEmail(),
+        check("password", "Password is required").not().isEmpty()
+    ],
+    async (req, res) => {
+        console.log("📌 Start login process");
+
+        // ✅ ตรวจสอบว่ามีข้อผิดพลาดจาก `express-validator` หรือไม่
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            console.log("❌ Validation errors:", errors.array());
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { email, password } = req.body;
+
+        try {
+            // 🔍 ค้นหาผู้ใช้ในฐานข้อมูล
+            const user = await prisma.user.findUnique({ where: { email } });
+
+            if (!user) {
+                console.log("❌ Invalid Credentials - Email not found");
+                return res.status(400).json({ errors: [{ msg: "Invalid Credentials" }] });
+            }
+
+            // 🔑 ตรวจสอบรหัสผ่าน
+            const isMatch = await bcrypt.compare(password, user.password);
+            if (!isMatch) {
+                console.log("❌ Invalid Credentials - Incorrect password");
+                return res.status(400).json({ errors: [{ msg: "Invalid Credentials" }] });
+            }
+
+            // 🎫 สร้าง JWT Token
+            const token = JWT.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "10h" });
+
+            console.log("✅ Login successful");
+            res.json({
+                msg: "Login successful",
+                token,
+                userID: user.id,
+                email: user.email
+            });
+        } catch (error) {
+            console.error("❌ Login error:", error);
+            res.status(500).json({ msg: "Server error", error });
+        }
+    }
+);
+
+
+router.post(
+    "/forgot-password",
+    [check("email", "Invalid email format").isEmail()],
+    async (req, res) => {
+        console.log("📌 Start forgot-password process");
+
+        // ✅ ตรวจสอบว่ามีข้อผิดพลาดจาก `express-validator` หรือไม่
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            console.log("❌ Validation errors:", errors.array());
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { email } = req.body;
+
+        try {
+            // 🔍 ตรวจสอบว่าอีเมลนี้มีอยู่ในฐานข้อมูลหรือไม่
+            const user = await prisma.user.findUnique({ where: { email } });
+
+            // ✅ แจ้งข้อความเดียวกันเสมอ ไม่บอกว่า Email มีอยู่หรือไม่ เพื่อป้องกันข้อมูลรั่วไหล
+            if (!user) {
+                console.log("⚠️ Email not found or not registered.");
+                return res.status(200).json({ msg: "If this email exists, a reset link will be sent." });
+            }
+
+            // 🎫 สร้าง Reset Token ที่หมดอายุใน 15 นาที (ใช้ `user.id` แทน `email`)
+            const resetToken = JWT.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "15m" });
+
+            // 🔗 สร้างลิงก์รีเซ็ตรหัสผ่าน
+            const resetURL = `http://formix.com/reset-password/${resetToken}`;
+
+            // 📧 ส่งอีเมลให้ผู้ใช้
+            await sendEmail({
+                email: user.email,
+                subject: "Password Reset Request",
+                message: `Click the following link to reset your password:\n\n${resetURL}`
+            });
+
+            console.log("✅ Reset password email sent successfully");
+            res.status(200).json({ msg: "If this email exists, a reset link will be sent." });
+        } catch (error) {
+            console.error("❌ Forgot password error:", error);
+            res.status(500).json({ msg: "Server error", error });
+        }
+    }
+);
+
+
+router.post(
+    "/reset-password/:token",
+    [
+        check("newPassword", "Password must be at least 6 characters long").isLength({ min: 6 }),
+        check("confirmNewPassword", "Passwords do not match").custom(
+            (value, { req }) => value === req.body.newPassword
+        )
+    ],
+    async (req, res) => {
+        console.log("📌 Start reset-password process");
+
+        // ✅ ตรวจสอบว่ามีข้อผิดพลาดจาก `express-validator` หรือไม่
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            console.log("❌ Validation errors:", errors.array());
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { token } = req.params;
+        const { newPassword } = req.body;
+
+        try {
+            // 🔑 ตรวจสอบความถูกต้องของ Token
+            const decoded = JWT.verify(token, process.env.JWT_SECRET);
+            console.log("✅ Token verified successfully");
+
+            // 🔍 ค้นหาผู้ใช้ในฐานข้อมูล
+            const user = await prisma.user.findUnique({ where: { id: decoded.id } });
+
+            if (!user) {
+                console.log("❌ User not found for the provided token");
+                return res.status(400).json({ msg: "Invalid or expired token" });
+            }
+
+            // 🔒 Hash Password ใหม่
+            const hashedPassword = await bcrypt.hash(newPassword, 10);
+            console.log("✅ Password hashed successfully");
+
+            // 🔄 อัปเดตรหัสผ่านใหม่ในฐานข้อมูล
+            await prisma.user.update({
+                where: { id: user.id },
+                data: { password: hashedPassword }
+            });
+
+            console.log("✅ Password reset successful");
+            res.json({ msg: "Password reset successful. Please login!" });
+        } catch (error) {
+            console.error("❌ Reset password error:", error);
+            res.status(400).json({ msg: "Invalid or expired token" });
+        }
+    }
+);
+
+router.get("/verify", async (req, res) => {
+    console.log("📌 Start token verification process");
+
+    try {
+        // ✅ ดึง Token จาก Header
+        const token = req.header("x-auth-token");
+
+        if (!token) {
+            console.log("❌ No token provided");
+            return res.status(401).json({ msg: "No token found" });
+        }
+
+        // 🔍 ตรวจสอบความถูกต้องของ Token
+        const decoded = JWT.verify(token, process.env.JWT_SECRET);
+        console.log("✅ Token verified successfully:", decoded);
+
+        // 🔍 ค้นหาผู้ใช้จาก Token
+        const user = await prisma.user.findUnique({ where: { id: decoded.id } });
+
+        if (!user) {
+            console.log("❌ User not found for the given token");
+            return res.status(404).json({ msg: "User not found" });
+        }
+
+        console.log("✅ User verified:", user.email);
+        res.json({ user: { id: user.id, email: user.email, name: user.name } });
     } catch (error) {
-        res.status(400).json({ msg: "Invalid or expired token" });
+        console.error("❌ Token verification error:", error);
+        return res.status(401).json({ msg: "Token invalid" });
     }
 });
 
 
-router.get("/all", async (req, res) => {
-    connection.query("SELECT email FROM User", (err, results) => {
-        if (err) return res.status(500).json({ msg: "Database error", error: err });
+// router.get("/all", async (req, res) => {
+//     connection.query("SELECT email FROM User", (err, results) => {
+//         if (err) return res.status(500).json({ msg: "Database error", error: err });
 
-        res.json(results);
-    });
-});
+//         res.json(results);
+//     });
+// });
 
 
 module.exports = router

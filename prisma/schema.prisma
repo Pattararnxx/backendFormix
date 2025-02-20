@@ -7,28 +7,31 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+
 model User {
-  id        Int       @id @default(autoincrement()) @map("id")
-  email     String    @unique(map: "email") @db.VarChar(255)
-  name      String    @db.VarChar(255)
-  password  String    @db.VarChar(255)
-  createdAt DateTime @default(now()) @db.Timestamp(0)
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String   @default("Username")
+  password  String
+  createdAt DateTime @default(now())
 
-
-  @@map("User")
+  forms     Form[]   // 🔗 User มีหลาย Form
+  responses Response[]
 }
 
 model Form {
-  id String @id @default(uuid())
-  userID Int
-  title String
+  id          String    @id @default(uuid())
+  userID      Int
+  user        User      @relation(fields: [userID], references: [id], onDelete: Cascade) // ✅ เชื่อมกับ User
+  title       String
   description String?
-  color String
-  active Boolean @default(true) // ✅ ใช้ Boolean เช็คสถานะของฟอร์ม
-  theme String
-  questions Question[] // ✅ ใช้ "questions" แทน "question" เพื่อความเข้าใจง่าย
-  responses Response[]
-  createdAt DateTime @default(now())
+  color       String
+  active      Boolean   @default(true) // ✅ ใช้ Boolean เช็คสถานะของฟอร์ม
+  theme       String
+  limitForm   Int       // ✅ จำกัดจำนวนการตอบ
+  questions   Question[]
+  responses   Response[]
+  createdAt   DateTime  @default(now())
 }
 
 enum QuestionType {
@@ -37,32 +40,33 @@ enum QuestionType {
   number
   dropdown
   radio
-  
 }
 
 model Question {
-  id Int @id @default(autoincrement())
-  formID String
-  form Form @relation(fields: [formID], references: [id])
-  question String
-  type String // ✅ ใช้ ENUM แทน String
-  required Boolean @default(false)
-  options Option[] 
-  limitAns Int @default(1) // ✅ จำกัดจำนวนคำตอบที่เลือกได้
+  id        Int         @id @default(autoincrement())
+  formID    String
+  form      Form        @relation(fields: [formID], references: [id], onDelete: Cascade) // ✅ ลบ Form → ลบคำถาม
+  question  String
+  type      QuestionType // ✅ ENUM สำหรับประเภทคำถาม
+  required  Boolean     @default(false)
+  options   Option[] 
+  limitAns  Int         @default(1) // ✅ จำกัดจำนวนคำตอบ
+  limit     Int         // ✅ กำหนดจำนวนคนตอบ
 }
 
 model Option {
-  id Int @id @default(autoincrement())
-  text String @default("") // ✅ ป้องกัน null
+  id         Int       @id @default(autoincrement())
+  text       String    @default("") // ✅ ป้องกัน null
   questionID Int
-  questions Question @relation(fields: [questionID], references: [id], onDelete: Cascade)
+  question   Question  @relation(fields: [questionID], references: [id], onDelete: Cascade) // ✅ ลบคำถาม → ลบตัวเลือก
 }
 
 model Response {
-  id String @id @default(uuid())
-  formID String
-  form Form @relation(fields: [formID], references: [id])
-  userID Int // ✅ เชื่อมกับ User
-  answer Json
-  createdAt DateTime @default(now())
+  id        String    @id @default(uuid())
+  formID    String
+  form      Form      @relation(fields: [formID], references: [id], onDelete: Cascade) // ✅ ลบ Form → ลบ Response
+  userID    Int
+  user      User      @relation(fields: [userID], references: [id], onDelete: Cascade) // ✅ เชื่อมกับ User
+  answer    Json
+  createdAt DateTime  @default(now())
 }

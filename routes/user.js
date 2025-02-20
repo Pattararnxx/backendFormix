@@ -1,6 +1,5 @@
 const express = require("express");
 const prisma = require("../prisma");
-const connection = require("../db");
 const myMiddleware = require("../middleware/checkAuth");
 const router = express.Router();
 
