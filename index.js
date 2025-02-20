@@ -16,11 +16,12 @@ app.use(cors({
     origin: "http://localhost:3000", 
     credentials: true
 }));
-app.use(myMiddleware);
+
 app.use("/auth", auth);
 app.use("/posts", post);
 app.use("/form", form);
 app.use("/response", response);
+app.use(myMiddleware);
 
 
 

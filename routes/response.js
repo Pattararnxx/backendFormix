@@ -1,12 +1,15 @@
 const express = require("express");
 const prisma = require("../prisma");
+const checkAuth = require("../middleware/checkAuth");
 const router = express.Router();
 
 // ✅ 1. บันทึกคำตอบของแบบฟอร์ม
-router.post("/submit", async (req, res) => {
-    const { formID, responses } = req.body; // ✅ ดึง formID จาก req.body
-
+router.post("/submit", checkAuth, async (req, res) => {
     try {
+        const userID = req.user.id || null;
+        const { email, answer} = req.body; // ✅ ดึง formID จาก req.body
+
+
         // ✅ ดึงข้อมูลคำถามทั้งหมดของแบบฟอร์มจากฐานข้อมูล
         const questionList = await prisma.question.findMany({
             where: { formID },

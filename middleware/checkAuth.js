@@ -3,7 +3,11 @@ const connection = require("../db");
 
 module.exports = async (req, res, next)=>{
     const token = req.header('x-auth-token');
-    const userId = req.user?.id; 
+    
+    console.log("Received Token:", token);
+    
+    console.log("🚀 Received Token:", token); // ✅ Debug Log (เช็คว่ามีค่าไหม)
+    console.log("🚀 Headers:", req.headers); // ✅ Debug Log (ดู Headers ทั้งหมด)
 
     if (!token) {
         return res.status(400).json({
@@ -14,11 +18,12 @@ module.exports = async (req, res, next)=>{
             ]
         })
     }
-
+    
     try {
         const decoded = JWT.verify(token, process.env.JWT_SECRET);
         req.user = decoded;
-                
+        
+        const userId = req.user.id; 
         // ดึงข้อมูลผู้ใช้จากฐานข้อมูล
         connection.query('SELECT * FROM User WHERE id = ?', [userId], (err, results) => {
         if (err) {
@@ -33,6 +38,7 @@ module.exports = async (req, res, next)=>{
         next(); 
     });
     } catch (error) {
+        console.error("JWT Verification Error:", error);
         return res.status(401).json({
             "error":[
                 {

@@ -5,7 +5,8 @@ const router = express.Router();
 
 //create new form
 router.post("/create", checkAuth, async (req, res) => {
-    const { title, description, theme, color, questions } = req.body;
+    try {
+        const { title, description, theme, color, questions } = req.body;
         const userID = req.user.id || null;
         if(!title || !questions || questions.length === 0) {
             return res.status(400).json({error: "please enter your title and question"})
@@ -13,62 +14,68 @@ router.post("/create", checkAuth, async (req, res) => {
         if(!userID) {
             return res.status(400).json({err: "User undefine"})
         }
-        try {
-            const newForm = await prisma.form.create({
-                data: {
-                    title,
-                    description,
-                    theme,
-                    color,
-                    userID, 
-                    questions: {
-                        create: questions.map((q) => ({
-                            question: q.question,
-                            type: q.type,
-                            required: q.required || false,
-                            limitAns: q.limitAns || 1,
-                            options: q.options? {
-                                create: q.options.map(options => ({
-                                text: options.text,
-                                })),
-                            } : undefined,
-                        })),
-                    },
+        const newForm = await prisma.form.create({
+            data: {
+                title,
+                description,
+                theme,
+                color,
+                userID, 
+                questions: {
+                    create: questions.map((q) => ({
+                        question: q.question,
+                        type: q.type,
+                        required: q.required || false,
+                        limitAns: q.limitAns || 1,
+                        options: q.options? {
+                            create: q.options.map(options => ({
+                            text: options.text,
+                            })),
+                        } : undefined,
+                    })),
                 },
-                include: { questions: { include: { options: true} }},
-            });
-            res.json({id: newForm.id, msg: "Form created successfully", form: newForm});
-        } catch (err) {
-            console.error("Failed to create form", err);
-            res.status(500).send({msg: "Failed to create form"});
-        }
+            },
+            include: { questions: { include: { options: true} }},
+        });
+        res.json({id: newForm.id, msg: "Form created successfully", form: newForm});
+    } catch (err) {
+        console.error("Failed to create form", err);
+        res.status(500).send({msg: "Failed to create form"});
+    }
 });
 // show all user form
-router.get("/forms/:id", checkAuth, async (req, res) => {
-    const { id } = req.params;
-
+router.get("/user", checkAuth, async (req, res) => {
     try {
+        const userID = req.user.id || null;
+
         if(req.user.id !== parseInt (id)) {
             return res.status(403).json({err: "Unauthorized access"});
         }
         if(!user) {
-            return res.status(404).json({err: "error not found"})
+            return res.status(404).json({err: "Unauthorized: No user ID found"})
         }
 
         const forms = await prisma.form.findMany({
-            where: {id},
-            include: {question: true},
-        }); res.json({forms});
+            where: { userID },
+            include: { questions: { include: { options: true} }},
+            orderBy: { createdAt: "desc" }
+        }); res.status(200).json({forms});
     } catch (err) {
-        console.err();
+        console.err("Failed to fetch forms", err);
         res.status(500).json({err: "Failed to fetch forms"});
     }
 });
 
 //show form(ID)
 router.get("/:id", checkAuth, async (req,res) => {
-    const { id } = req.params;
-     try{
+    try{
+        const { id } = req.params;
+        const userID = req.user.id || null;
+
+        if (!userID) {
+            return res.status(401).json({ error: "Unauthorized: No user ID found" });
+        }
+
         if(req.user.id !== parseInt (id)) {
             return res.status(403).json({err: "Unauthorized access"});
         }
@@ -80,7 +87,7 @@ router.get("/:id", checkAuth, async (req,res) => {
         if (!form) {
             return res.status(404).json({ error: "Form not found" });
         }
-         res.json(form);
+         res.status(200).json(form);
      } catch (err) {
         res.status(500).json({err: "Failed to fetch form"});
      }
@@ -88,9 +95,15 @@ router.get("/:id", checkAuth, async (req,res) => {
 
 //update form
 router.put("/:id", checkAuth, async (req, res) => {
-    const { id } = req.params;
-    const { title, description, theme, color, questions } = req.body;
     try {
+        const { id } = req.params;
+        const { title, description, theme, color, questions } = req.body;
+        const userID = req.user.id || null;
+
+        if (!userID) {
+            return res.status(401).json({ error: "Unauthorized: No user ID found" });
+        }
+
         const form = await prisma.form.findUnique({ where: { id } });
 
         if (!form) {
@@ -110,8 +123,8 @@ router.put("/:id", checkAuth, async (req, res) => {
                 theme,
                 userID,
                 questions: {
-                    create: question.map((p) => ({
-                        title: q.text,
+                    create: questions.map((p) => ({
+                        question: q.text,
                         type: q.type,
                         require: q.require || false,
                         limitAns: q.limitAns || 1,
@@ -121,19 +134,28 @@ router.put("/:id", checkAuth, async (req, res) => {
                     })), 
                 },
             },
-        })
+            include: { questions: { include: { options: true} }},
+        });
         res.json({msg: "updated form successfully!", updateForm});
     } catch (err) {
-        console.err();
+        console.err( "Updated form failed",err);
         res.status(400).json({err: "Updated form failed"});
     }
 });
 
 //delete form
-router.delete("/", checkAuth, async (req, res) => {
-    const { id } = req.params;
+router.delete("/:id", checkAuth, async (req, res) => {
     try {
-        const form = await prisma.form.findUnique({ where: { id } });
+        const { id } = req.params;
+        const userID = req.user.id || null;
+
+        if (!userID) {
+            return res.status(401).json({ error: "Unauthorized: No user ID found" });
+        }
+
+        const form = await prisma.form.findUnique({
+             where: { id } 
+            });
 
         if (!form) {
             return res.status(404).json({ error: "Form not found" });
