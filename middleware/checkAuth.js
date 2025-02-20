@@ -3,6 +3,7 @@ const connection = require("../db");
 
 module.exports = async (req, res, next)=>{
     const token = req.header('x-auth-token');
+    const userId = req.user?.id; 
 
     if (!token) {
         return res.status(400).json({
@@ -19,7 +20,6 @@ module.exports = async (req, res, next)=>{
         req.user = decoded;
                 
         // ดึงข้อมูลผู้ใช้จากฐานข้อมูล
-        const userId = req.user.id; 
         connection.query('SELECT * FROM User WHERE id = ?', [userId], (err, results) => {
         if (err) {
             return res.status(500).json({ msg: "Database error", error: err });

@@ -4,11 +4,14 @@ const myMiddleware = require("../middleware/checkAuth");
 const router = express.Router();
 
 //create new form
-router.post("/create", async (req, res) => {
+router.post("/create", myMiddleware, async (req, res) => {
     const { title, description, theme, color, questions } = req.body;
-        const userID = req.user.id;
+        const userID = req.user.id || null;
         if(!title || !questions || questions.length === 0) {
             return res.status(400).json({error: "please enter your title and question"})
+        }
+        if(!userID) {
+            return res.status(400).json({err: "User undefine"})
         }
         try {
             const newForm = await prisma.form.create({
@@ -17,10 +20,10 @@ router.post("/create", async (req, res) => {
                     description,
                     theme,
                     color,
-                    userID,
+                    userID, 
                     questions: {
                         create: questions.map((q) => ({
-                            question: q.text,
+                            question: q.question,
                             type: q.type,
                             required: q.required || false,
                             limitAns: q.limitAns || 1,
