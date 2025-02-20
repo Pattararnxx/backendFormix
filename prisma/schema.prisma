@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,55 +7,62 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-//form
-
 model User {
-  id Int @id @default(autoincrement())
-  email String
-  name String?
-  password String
-  total Int //count all forms
-  forms Form[]
-  createdAt DateTime @default(now())
+  id        Int       @id @default(autoincrement()) @map("id")
+  email     String    @unique(map: "email") @db.VarChar(255)
+  name      String    @db.VarChar(255)
+  password  String    @db.VarChar(255)
+  createdAt DateTime @default(now()) @db.Timestamp(0)
+
+
+  @@map("User")
 }
 
 model Form {
   id String @id @default(uuid())
-  userID String
-  user User @relation(fields: [userID], references: [id])
+  userID Int
   title String
   description String?
   color String
-  active Boolean @default(true) //for check active form
-  team String
-  question Question[]
+  active Boolean @default(true) // ✅ ใช้ Boolean เช็คสถานะของฟอร์ม
+  theme String
+  questions Question[] // ✅ ใช้ "questions" แทน "question" เพื่อความเข้าใจง่าย
+  responses Response[]
   createdAt DateTime @default(now())
+}
+
+enum QuestionType {
+  text
+  check
+  number
+  dropdown
+  radio
+  
 }
 
 model Question {
   id Int @id @default(autoincrement())
   formID String
   form Form @relation(fields: [formID], references: [id])
-  title String
-  type String
-  required Boolean
-  options Option[]
-  limitAns Int @default(1)
+  question String
+  type String // ✅ ใช้ ENUM แทน String
+  required Boolean @default(false)
+  options Option[] 
+  limitAns Int @default(1) // ✅ จำกัดจำนวนคำตอบที่เลือกได้
 }
 
 model Option {
   id Int @id @default(autoincrement())
-  text String?
+  text String @default("") // ✅ ป้องกัน null
   questionID Int
-  question Question @relation(fields: [questionID], references: [id], onDelete: Cascade) 
+  questions Question @relation(fields: [questionID], references: [id], onDelete: Cascade)
 }
 
 model Response {
   id String @id @default(uuid())
   formID String
   form Form @relation(fields: [formID], references: [id])
+  userID Int // ✅ เชื่อมกับ User
   answer Json
   createdAt DateTime @default(now())
 }
-
-

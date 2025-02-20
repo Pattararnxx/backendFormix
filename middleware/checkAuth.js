@@ -1,6 +1,5 @@
 const JWT = require("jsonwebtoken");
 const connection = require("../db");
-const prisma = require("../prisma");
 
 module.exports = async (req, res, next)=>{
     const token = req.header('x-auth-token');
@@ -18,7 +17,7 @@ module.exports = async (req, res, next)=>{
     try {
         const decoded = JWT.verify(token, process.env.JWT_SECRET);
         req.user = decoded;
-        
+                
         // ดึงข้อมูลผู้ใช้จากฐานข้อมูล
         const userId = req.user.id; 
         connection.query('SELECT * FROM User WHERE id = ?', [userId], (err, results) => {
