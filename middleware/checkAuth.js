@@ -9,7 +9,7 @@ module.exports = async (req, res, next)=>{
         return res.status(400).json({
             "error":[
                 {
-                    "msg": "No token found1",
+                    "msg": "No token found",
                 }
             ]
         })

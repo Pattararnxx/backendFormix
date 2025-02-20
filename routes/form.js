@@ -1,10 +1,10 @@
 const express = require("express");
 const prisma = require("../prisma");
-const myMiddleware = require("../middleware/checkAuth");
+const checkAuth = require("../middleware/checkAuth");
 const router = express.Router();
 
 //create new form
-router.post("/create", myMiddleware, async (req, res) => {
+router.post("/create", checkAuth, async (req, res) => {
     const { title, description, theme, color, questions } = req.body;
         const userID = req.user.id || null;
         if(!title || !questions || questions.length === 0) {
@@ -44,7 +44,7 @@ router.post("/create", myMiddleware, async (req, res) => {
         }
 });
 // show all user form
-router.get("/forms/:id", myMiddleware, async (req, res) => {
+router.get("/forms/:id", checkAuth, async (req, res) => {
     const { id } = req.params;
 
     try {
@@ -66,7 +66,7 @@ router.get("/forms/:id", myMiddleware, async (req, res) => {
 });
 
 //show form(ID)
-router.get("/:id", myMiddleware, async (req,res) => {
+router.get("/:id", checkAuth, async (req,res) => {
     const { id } = req.params;
      try{
         if(req.user.id !== parseInt (id)) {
@@ -87,7 +87,7 @@ router.get("/:id", myMiddleware, async (req,res) => {
 });
 
 //update form
-router.put("/:id", myMiddleware, async (req, res) => {
+router.put("/:id", checkAuth, async (req, res) => {
     const { id } = req.params;
     const { title, description, theme, color, questions } = req.body;
     try {
@@ -130,7 +130,7 @@ router.put("/:id", myMiddleware, async (req, res) => {
 });
 
 //delete form
-router.delete("/", myMiddleware, async (req, res) => {
+router.delete("/", checkAuth, async (req, res) => {
     const { id } = req.params;
     try {
         const form = await prisma.form.findUnique({ where: { id } });
