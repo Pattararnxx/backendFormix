@@ -21,13 +21,13 @@ app.use("/auth", auth);
 app.use("/posts", post);
 app.use("/form", checkAuth, form);
 app.use("/response", checkAuth, response);
-app.use("/dashboard", checkAuth, dashboard);
+// app.use("/dashboard", checkAuth, dashboard);
 
 
-// ✅ ตรวจสอบว่า Prisma เชื่อมต่อฐานข้อมูลได้หรือไม่
+
 app.get("/health", async (req, res) => {
     try {
-        await prisma.$queryRaw`SELECT 1`; // ทดสอบ Query
+        await prisma.$queryRaw`SELECT 1`; 
         res.json({ status: "Database connected!" });
     } catch (error) {
         res.status(500).json({ error: "Database connection failed!" });

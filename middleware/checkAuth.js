@@ -29,9 +29,9 @@ module.exports = async (req, res, next) => {
             return res.status(404).json({ msg: "User not found" });
         }
 
-        req.userDetails = user; // ✅ เก็บข้อมูล User เพื่อใช้ใน API ถัดไป
-        next(); // ✅ ให้ API ดำเนินการต่อ
-    } catch (error) {
+        req.userDetails = user; 
+        next();
+        } catch (error) {
         console.error("JWT Verification Error:", error);
         return res.status(401).json({
             "error": [
