@@ -3,11 +3,13 @@ const cors = require("cors");
 const prisma = require("./prisma");
 const checkAuth = require('./middleware/checkAuth')
 
+
 const auth = require("./routes/auth");
 const post = require("./routes/post");
 const form = require("./routes/form");
 const response = require("./routes/response");
 const dashboard = require("./routes/dashboard");
+const workspace = require("./routes/workspace");
 
 const app = express();
 
@@ -21,6 +23,7 @@ app.use("/auth", auth);
 app.use("/posts", post);
 app.use("/form", checkAuth, form);
 app.use("/response", checkAuth, response);
+app.use("/getForm", checkAuth, workspace);
 // app.use("/dashboard", checkAuth, dashboard);
 
 

@@ -1,12 +1,9 @@
 const JWT = require("jsonwebtoken");
-const prisma = require("../prisma"); // ✅ ใช้ Prisma ORM
-require("dotenv").config(); // ✅ โหลดค่า .env
+const prisma = require("../prisma");
+require("dotenv").config(); 
 
 module.exports = async (req, res, next) => {
     const token = req.header("x-auth-token");
-
-    console.log("Received Token:", token);
-
     if (!token) {
         return res.status(400).json({
             "error": [
@@ -16,11 +13,9 @@ module.exports = async (req, res, next) => {
     }
 
     try {
-        // ✅ ตรวจสอบ JWT
         const decoded = JWT.verify(token, process.env.JWT_SECRET);
         req.user = decoded;
 
-        // ✅ ดึงข้อมูลผู้ใช้จากฐานข้อมูลผ่าน Prisma
         const user = await prisma.user.findUnique({
             where: { id: req.user.id }
         });

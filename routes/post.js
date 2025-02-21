@@ -13,10 +13,9 @@ router.get("/public", (req, res) => {
 router.get("/private", checkAuth, async (req, res) => {
   try {
     const userId =Number( req.user.id)    
-    const forms = await prisma.form.findMany({
+    const forms = await prisma.form.findUnique({
       where: { id: userId },  
     });
-    console.log("this form"+forms)
 
     if (forms.length === 0) {
       return res.status(404).json({ msg: "No private posts found" });

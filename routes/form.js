@@ -4,15 +4,12 @@ const checkAuth = require("../middleware/checkAuth");
 const router = express.Router();
 
 router.post("/create", checkAuth, async (req, res) => {
-  const { title, description, theme, color } = req.body;
+  const { title, description, theme, color ,limitForm} = req.body;
   const userID = req.user.id || null;
-
-
   const forms = await prisma.user.findMany({
     where: { id: userID },  
   });
   console.log(forms)
-
 
   try {
     const newForm = await prisma.form.create({
@@ -22,10 +19,19 @@ router.post("/create", checkAuth, async (req, res) => {
         theme,
         color,
         userID,
-      },
-    });
-
-    return res.json({ msg: "Form created successfully", form: newForm });
+        limitForm,
+        questions:{
+          create: questions.map(q => ({
+            title: q.title,
+            type: q.type,
+            required: q.required,
+            limit: q.limit,
+            limitAns: q.limitAns
+            }))
+          }
+        }
+      });
+      return res.json({ msg: "Form created successfully", form: newForm });
   } catch (err) {
     console.error("❌ Error creating form:", err);
     return res.status(500).json({ msg: "Failed to create form", error: err });

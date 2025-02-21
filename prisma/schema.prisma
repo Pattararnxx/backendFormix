@@ -24,5 +24,17 @@ model Form {
   active      Boolean   @default(true) 
   theme       String
   limitForm   Int?
+  questions Question[]
+
+}
+model Question {
+  id Int @id @default(autoincrement())
+  formID String
+  form Form @relation(fields: [formID], references: [id], onDelete: Cascade)
+  title String
+  type String
+  required String @default(false)
+  limit Int?
+  limitAns Int? 
 
 }
