@@ -33,7 +33,7 @@ model Question {
   form Form @relation(fields: [formID], references: [id], onDelete: Cascade)
   title String
   type String
-  required String @default(false)
+  required Boolean @default(false)
   limit Int?
   limitAns Int? 
 

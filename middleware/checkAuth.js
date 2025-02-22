@@ -25,6 +25,7 @@ module.exports = async (req, res, next) => {
         }
 
         req.userDetails = user; 
+
         next();
         } catch (error) {
         console.error("JWT Verification Error:", error);

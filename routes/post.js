@@ -12,22 +12,24 @@ router.get("/public", (req, res) => {
 
 router.get("/private", checkAuth, async (req, res) => {
   try {
-    const userId =Number( req.user.id)    
-    const forms = await prisma.form.findUnique({
-      where: { id: userId },  
+    const userId = req.user.id; 
+    const forms = await prisma.form.findMany({
+      where: { userID: userId }, 
     });
 
-    if (forms.length === 0) {
+    if (!forms || forms.length === 0) {
       return res.status(404).json({ msg: "No private posts found" });
     }
 
     res.json({
       user: req.userDetails,
-      posts: posts,
+      forms: forms,  
     });
   } catch (error) {
+    console.error("Database error:", error);
     res.status(500).json({ msg: "Database error", error: error.message });
   }
 });
+
 
 module.exports = router;

@@ -23,7 +23,8 @@ app.use("/auth", auth);
 app.use("/posts", post);
 app.use("/form", checkAuth, form);
 app.use("/response", checkAuth, response);
-app.use("/getForm", checkAuth, workspace);
+app.use("/workspace", checkAuth, workspace);
+
 // app.use("/dashboard", checkAuth, dashboard);
 
 

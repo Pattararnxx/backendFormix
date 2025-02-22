@@ -4,8 +4,11 @@ const checkAuth = require("../middleware/checkAuth");
 const router = express.Router();
 
 router.post("/create", checkAuth, async (req, res) => {
-  const { title, description, theme, color ,limitForm} = req.body;
+  console.log("Received Data:", req.body); 
+  console.log("Received Data:", JSON.stringify(req.body, null, 2));
+  const { title, description, theme, color ,limitForm, questions} = req.body;
   const userID = req.user.id || null;
+  const formattedQuestions = Array.isArray(questions.create) ? questions.create : [];
   const forms = await prisma.user.findMany({
     where: { id: userID },  
   });
@@ -21,7 +24,7 @@ router.post("/create", checkAuth, async (req, res) => {
         userID,
         limitForm,
         questions:{
-          create: questions.map(q => ({
+          create: formattedQuestions.map(q => ({
             title: q.title,
             type: q.type,
             required: q.required,
@@ -60,7 +63,7 @@ router.get("/:id", checkAuth, async (req, res) => {
   try {
 
     const form = await prisma.form.findUnique({
-      where: { id: id },
+      where: { id: String(id) },
       include: { questions: { include: { options: true } } }
     });
 
