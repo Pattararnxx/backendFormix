@@ -29,12 +29,16 @@ router.post("/create", checkAuth, async (req, res) => {
             type: q.type,
             required: q.required,
             limit: q.limit,
-            limitAns: q.limitAns
+            limitAns: q.limitAns,
+            options: q.options
+                ? { create: q.options.map(opt => ({ text: opt.text })) }
+                : undefined
             }))
           }
-        }
-      });
-      return res.json({ msg: "Form created successfully", form: newForm });
+        },
+        include: { questions: { include: { options: true } } }
+    });
+    return res.json({ msg: "Form created successfully", form: newForm });
   } catch (err) {
     console.error("❌ Error creating form:", err);
     return res.status(500).json({ msg: "Failed to create form", error: err });
