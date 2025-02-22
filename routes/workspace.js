@@ -59,4 +59,49 @@ router.get("/getForm", checkAuth, async (req, res) => {
     }
 });
 
+router.put(
+    "/:id",
+    checkAuth,
+    [check("name", "Name is required").not().isEmpty()],
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { id } = req.params;
+        const { name } = req.body;
+
+        try {
+            // ❌ ป้องกันไม่ให้ผู้ใช้แก้ไขชื่อของคนอื่น
+            if (parseInt(id) !== req.user.id) {
+                return res.status(403).json({ err: "Unauthorized access to change name" });
+            }
+
+            // 🔍 ตรวจสอบว่าผู้ใช้มีอยู่จริง
+            const existingUser = await prisma.user.findUnique({
+                where: { id: parseInt(id) }
+            });
+
+            if (!existingUser) {
+                return res.status(404).json({ err: "User not found" });
+            }
+
+            // 🔄 อัปเดตเฉพาะ `name`
+            const updatedUser = await prisma.user.update({
+                where: { id: parseInt(id) },
+                data: { name },
+                select: { id: true, name: true }
+            });
+
+            res.json({ msg: "User name updated successfully", user: updatedUser });
+        } catch (error) {
+            console.error("❌ Error updating user name:", error);
+            res.status(500).json({ err: "Server error" });
+        }
+    }
+);
+
+
+
 module.exports = router;

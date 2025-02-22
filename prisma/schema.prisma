@@ -36,5 +36,12 @@ model Question {
   required Boolean @default(false)
   limit Int?
   limitAns Int? 
-
+  options Option[]
 }
+
+model Option {
+  id         Int       @id @default(autoincrement())
+  text       String    @default("")
+  questionID Int
+  question   Question  @relation(fields: [questionID], references: [id], onDelete: Cascade)
+} 
