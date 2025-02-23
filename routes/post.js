@@ -2,14 +2,6 @@ const router = require("express").Router();
 const prisma = require("../prisma");
 const checkAuth = require("../middleware/checkAuth");
 
-router.get("/public", (req, res) => {
-  const publicPosts = [
-    { id: 1, title: "Public Post 1", content: "This is a public post" },
-    { id: 2, title: "Public Post 2", content: "This is another public post" },
-  ];
-  res.json(publicPosts);
-});
-
 router.get("/private", checkAuth, async (req, res) => {
   try {
     const userId = req.user.id; 
