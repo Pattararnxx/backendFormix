@@ -6,6 +6,7 @@ const router = express.Router();
 router.post("/create", checkAuth, async (req, res) => {
   console.log("Received Data:", req.body); 
   console.log("Received Data:", JSON.stringify(req.body, null, 2));
+  
   const { title, description, theme, color ,limitForm, questions} = req.body;
   const userID = req.user.id || null;
   const formattedQuestions = Array.isArray(questions.create) ? questions.create : [];
@@ -23,22 +24,27 @@ router.post("/create", checkAuth, async (req, res) => {
         color,
         userID,
         limitForm,
-        questions:{
+        questions: {
           create: formattedQuestions.map(q => ({
             title: q.title,
             type: q.type,
             required: q.required,
-            limit: q.limit,
-            limitAns: q.limitAns,
-            options: q.options
-                ? { create: q.options.map(opt => ({ text: opt.text })) }
-                : undefined
-            }))
-          }
+            limit: q.limit ?? 100,
+            limitAns: q.limitAns ?? 1,
+            options: q.options?.create?.length > 0
+              ? { create: q.options.create.map(opt => ({ text: opt.text })) }
+              : undefined,
+          })),
         },
-        include: { questions: { include: { options: true } } }
+      },
     });
-    return res.json({ msg: "Form created successfully", form: newForm });
+    
+    const createdForm = await prisma.form.findUnique({
+      where: { id: newForm.id },
+      include: { questions: { include: { options: true } } }
+    });
+    
+    return res.json({ msg: "Form created successfully", form: createdForm });
   } catch (err) {
     console.error("❌ Error creating form:", err);
     return res.status(500).json({ msg: "Failed to create form", error: err });
@@ -93,7 +99,7 @@ router.put("/:id", checkAuth, async (req, res) => {
   
   try {
 
-    if (!userID) {
+    if (!req.user?.id) {  
       return res.status(401).json({ error: "Unauthorized: No user ID found" });
     }
 
@@ -125,7 +131,7 @@ router.put("/:id", checkAuth, async (req, res) => {
   }
 });
 
-// // Delete form
+// Delete form
 // router.delete("/:id", checkAuth, async (req, res) => {
 //   try {
 //     const { id } = req.params;
