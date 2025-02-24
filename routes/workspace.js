@@ -7,7 +7,6 @@ const router = express.Router();
 router.get("/getForm", checkAuth, async (req, res) => {
   try {
     const userID = req.user?.id;
-
     if (!userID) {
       return res.status(401).json({ error: "Unauthorized: No userID" });
     }
@@ -15,7 +14,7 @@ router.get("/getForm", checkAuth, async (req, res) => {
     // ดึงข้อมูล email ของผู้ใช้
     const user = await prisma.user.findUnique({
       where: { id: userID },
-      select: { email: true ,name:true},
+      select: { email: true, name: true },
     });
 
     if (!user) {
@@ -32,29 +31,37 @@ router.get("/getForm", checkAuth, async (req, res) => {
         active: true,
       },
     });
-
     if (forms.length === 0) {
-      return res.status(404).json({ error: "No forms found" });
+      console.log("email", user.email);
+      return res.status(200).json({
+        userID,
+        activeForm: 0,
+        totalForm: 0,
+        email: user.email,
+        name: user.name || "USER NAME",
+        error: "No forms found",
+      });
+    } else {
+      const totalForm = forms.length;
+      const activeForm = forms.filter((form) => form.active).length;
+
+      const formattedForms = forms.map((form) => ({
+        id: form.id,
+        name: form.title,
+        archive: !form.active,
+        proflieId: form.theme,
+        status: false,
+      }));
+
+      res.json({
+        userID,
+        totalForm,
+        activeForm,
+        email: user.email,
+        name: user.name || "USER NAME",
+        forms: formattedForms,
+      });
     }
-
-    const totalForm = forms.length;
-    const activeForm = forms.filter((form) => form.active).length;
-
-    const formattedForms = forms.map((form) => ({
-      name: form.title,
-      archive: !form.active,
-      proflieId: form.theme,
-      status: false,
-    }));
-
-    res.json({
-      userID,
-      totalForm,
-      activeForm,
-      email: user.email,
-      name: user.name || "USER NAME",
-      forms: formattedForms,
-    });
   } catch (error) {
     console.error("❌ Error fetching forms:", error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -82,7 +89,6 @@ router.put(
           .json({ err: "Unauthorized access to change name" });
       }
 
-      // 🔍 ตรวจสอบว่าผู้ใช้มีอยู่จริง
       const existingUser = await prisma.user.findUnique({
         where: { id: parseInt(id) },
       });
@@ -91,7 +97,6 @@ router.put(
         return res.status(404).json({ err: "User not found" });
       }
 
-      // 🔄 อัปเดตเฉพาะ `name`
       const updatedUser = await prisma.user.update({
         where: { id: parseInt(id) },
         data: { name },
@@ -109,5 +114,38 @@ router.put(
     }
   }
 );
+
+router.delete("/:id", checkAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userID = req.user.id || null;
+
+    if (!userID) {
+      return res.status(401).json({ error: "Unauthorized: No user ID found" });
+    }
+
+    const form = await prisma.form.findUnique({
+      where: { id: String(id) },
+    });
+    if (!form) {
+      return res.status(404).json({ error: "Form not found" });
+    }
+
+    if (form.userID !== userID) {
+      return res
+        .status(403)
+        .json({ error: "Unauthorized to delete this form" });
+    }
+
+    await prisma.form.delete({
+      where: { id: String(id) },
+    });
+
+    res.json({ msg: "Form deleted successfully" });
+  } catch (err) {
+    console.error("❌ Error deleting form:", err);
+    res.status(500).json({ error: "Failed to delete form" });
+  }
+});
 
 module.exports = router;

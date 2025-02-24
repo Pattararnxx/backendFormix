@@ -5,23 +5,19 @@ const { check, validationResult } = require("express-validator");
 const router = express.Router();
 
 
-//ดึงข้อมูลผู้ใช้
 router.get("/:id", checkAuth, async (req, res) => {
     const { id } = req.params;
 
     try {
-        // ค้นหาผู้ใช้จากฐานข้อมูล
         const user = await prisma.user.findUnique({
             where: { id: parseInt(id) },
             select: { id: true, email: true, createdAt: true }
         });
 
-        //ถ้าไม่พบผู้ใช้
         if (!user) {
             return res.status(404).json({ err: "User not found" });
         }
 
-        //ป้องกันไม่ให้ผู้ใช้ดึงข้อมูลของคนอื่น
         if (req.user.id !== parseInt(id)) {
             return res.status(403).json({ err: "Unauthorized access" });
         }
@@ -29,7 +25,7 @@ router.get("/:id", checkAuth, async (req, res) => {
         //ส่งข้อมูลผู้ใช้กลับไป
         res.json(user);
     } catch (err) {
-        console.error(Failed to fetch user data:", err);
+        console.error("Failed to fetch user data:", err);
         res.status(500).json({ err: "Server error" });
     }
 });
@@ -72,7 +68,7 @@ router.put(
 
             res.json({ msg: "User name updated successfully", user: updatedUser });
         } catch (error) {
-            console.error(Error updating user name:", error);
+            console.error("Error updating user name:", error);
             res.status(500).json({ err: "Server error" });
         }
     }

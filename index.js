@@ -10,7 +10,7 @@ const form = require("./routes/form");
 const response = require("./routes/response");
 const dashboard = require("./routes/dashboard");
 const workspace = require("./routes/workspace");
-
+const recieve = require("./routes/recieve");
 const app = express();
 
 app.use(express.json());
@@ -24,6 +24,7 @@ app.use("/posts", post);
 app.use("/form", checkAuth, form);
 app.use("/response", checkAuth, response);
 app.use("/workspace", checkAuth, workspace);
+app.use("/recieve", recieve);
 
 // app.use("/dashboard", checkAuth, dashboard);
 

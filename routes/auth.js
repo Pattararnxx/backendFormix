@@ -94,7 +94,7 @@ router.post(
       });
       const issuedAt = Date.now()+10*60*60*1000
 
-      
+      console.log('user.email', user.email)
       console.log("✅ Login successful");
       res.json({
         msg: "Login successful",
