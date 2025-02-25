@@ -1,10 +1,9 @@
 const express = require("express");
 const prisma = require("../prisma");
-const checkAuth = require("../middleware/checkAuth");
 const router = express.Router();
 
 // บันทึกคำตอบของแบบฟอร์ม
-router.post("/submit", checkAuth, async (req, res) => {
+router.post("/submit", async (req, res) => {
     try {
         const userID = req.user.id;
         const { formID, email, answer } = req.body; //ดึง formID และคำตอบจาก req.body

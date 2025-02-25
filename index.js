@@ -22,7 +22,7 @@ app.use(cors({
 app.use("/auth", auth);
 app.use("/posts", post);
 app.use("/form", checkAuth, form);
-app.use("/response", checkAuth, response);
+app.use("/response", response);
 app.use("/workspace", checkAuth, workspace);
 app.use("/recieve", recieve);
 

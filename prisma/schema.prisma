@@ -13,6 +13,7 @@ model User {
   name      String   @default("user name") 
   password  String
   forms Form[]
+  responses Response[] 
 }
 model Form {
   id          String  @id @default(uuid())
@@ -25,7 +26,7 @@ model Form {
   theme       String
   limitForm   Int?
   questions Question[]
-
+  responses Response[] 
 }
 model Question {
   id Int @id @default(autoincrement())
@@ -46,3 +47,15 @@ model Option {
   questionID Int
   question   Question  @relation(fields: [questionID], references: [id], onDelete: Cascade)
 } 
+
+model Response {
+  id        Int      @id @default(autoincrement())
+  formID    String
+  userID    Int
+  email     String?
+  answer    Json
+  createdAt DateTime @default(now())
+
+  form      Form     @relation(fields: [formID], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userID], references: [id], onDelete: Cascade)
+}
