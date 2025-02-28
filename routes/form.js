@@ -24,6 +24,7 @@ router.post("/create", checkAuth, async (req, res) => {
         color: JSON.parse(JSON.stringify(color)),
         userID,
         limitForm,
+        active,
         questions: {
           create: formattedQuestions.map(q => ({
             questionID:q.questionID,

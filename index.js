@@ -25,8 +25,7 @@ app.use("/form", checkAuth, form);
 app.use("/response", response);
 app.use("/workspace", checkAuth, workspace);
 app.use("/recieve", recieve);
-
-// app.use("/dashboard", checkAuth, dashboard);
+app.use("/dashboard", checkAuth, dashboard);
 
 
 

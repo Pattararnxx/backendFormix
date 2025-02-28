@@ -21,7 +21,7 @@ model Form {
   title       String
   description String?
   color       Json 
-  active      Boolean   @default(true) 
+  active      Boolean 
   theme       String
   limitForm   Int?
   questions Question[]
@@ -53,6 +53,5 @@ model Response {
   email     String?
   answer    Json
   createdAt DateTime @default(now())
-
   form      Form     @relation(fields: [formID], references: [id], onDelete: Cascade)
 }
