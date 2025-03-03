@@ -18,7 +18,7 @@ router.get("/stats", checkAuth, async (req, res) => {
         });
 
         const totalForms = forms.length;
-        const activeForms = forms.filter((form) => form.active).length;
+        const activeForms = forms.filter((form) => form.archive).length;
         const inactiveForms = totalForms - activeForms;
         const mostAnsweredForm = forms.reduce((prev, curr) =>
             prev._count.responses > curr._count.responses ? prev : curr, forms[0]
@@ -144,11 +144,11 @@ router.get("/form/:formID/export", checkAuth, async (req, res) => {
                 }
                 value.forEach((v) => answerMap.get(qID).add(v));
             });
-
+            const createdAtThai = new Date(resp.createdAt).toLocaleString("th-TH", { timeZone: "Asia/Bangkok" });
             const rowData = {
                 id: `${idx + 1}`,
                 email: resp.email || "Anonymous",
-                createdAt: new Date(resp.createdAt).toISOString(),
+                createdAt: createdAtThai,
             };
 
             form.questions.forEach((question) => {
