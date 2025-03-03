@@ -9,11 +9,14 @@ router.post("/create", checkAuth, async (req, res) => {
   
   const { title, description, theme, color ,limitForm, questions,} = req.body;
   const userID = req.user.id || null;
-  const formattedQuestions = Array.isArray(questions.create) ? questions.create : [];
-  const forms = await prisma.user.findMany({
-    where: { id: userID },  
-  });
-  console.log(forms)
+  const formattedQuestions = Array.isArray(questions?.create) 
+  ? questions.create.filter((q) => q.title && q.title.trim() !== "") 
+  : [];
+  const archive = req.body.archive ?? false;
+
+  if (questions.create.length === 0) {
+    return res.status(400).json({ error: "At least one question with a title is required" });
+  }
 
   try {
     const newForm = await prisma.form.create({
@@ -24,7 +27,7 @@ router.post("/create", checkAuth, async (req, res) => {
         color: JSON.parse(JSON.stringify(color)),
         userID,
         limitForm,
-        active,
+        archive,
         questions: {
           create: formattedQuestions.map(q => ({
             questionID:q.questionID,
@@ -59,7 +62,7 @@ router.get("/user", checkAuth, async (req, res) => {
   try {
     const forms = await prisma.form.findMany({
       where: { userID: req.user.id },
-      select: { id: true, title: true, description: true, active: true, createdAt: true },
+      select: { id: true, title: true, description: true, archive: true, createdAt: true },
       orderBy: { createdAt: "desc" },
     });
 
@@ -125,8 +128,8 @@ router.get("/editor/:formID", async (req, res) => {
             description: form.description,
             theme: form.theme,
             color: color,
-            active: form.active, // ✅ เช็คว่าเปิดใช้งานฟอร์มหรือไม่
-            createdAt: form.createdAt, // ✅ เวลาที่สร้างฟอร์ม
+            archive: form.archive,
+            createdAt: form.createdAt,
             questions: form.questions.map(q => ({
                   title: q.title,
                   type: q.type,

@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const prisma = require("./prisma");
 const checkAuth = require('./middleware/checkAuth')
+require("dotenv").config();
 
 
 const auth = require("./routes/auth");

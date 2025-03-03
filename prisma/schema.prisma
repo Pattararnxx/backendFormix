@@ -21,7 +21,7 @@ model Form {
   title       String
   description String?
   color       Json 
-  active      Boolean 
+  archive     Boolean? @default(false) 
   theme       String
   limitForm   Int?
   questions Question[]

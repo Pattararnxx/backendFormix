@@ -75,14 +75,16 @@ router.get("/form/:formID/responses", checkAuth, async (req, res) => {
     }
 });
 
-//API Export คำตอบเป็นไฟล์ Excel
 router.get("/form/:formID/export", checkAuth, async (req, res) => {
     try {
         const { formID } = req.params;
 
         const form = await prisma.form.findUnique({
             where: { id: formID },
-            include: { responses: true },
+            include: {
+                questions: true,
+                responses: true
+            },
         });
 
         if (!form) {
@@ -92,22 +94,84 @@ router.get("/form/:formID/export", checkAuth, async (req, res) => {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet("Responses");
 
-        worksheet.columns = [
-            { header: "Response ID", key: "id", width: 10 },
+        // สร้างคอลัมน์ของ Excel
+        const columns = [
+            { header: "Response ID", key: "id", width: 12 },
             { header: "Email", key: "email", width: 25 },
-            { header: "Answers", key: "answer", width: 50 },
             { header: "Submitted At", key: "createdAt", width: 20 },
         ];
 
-        form.responses.forEach((resp) => {
-            worksheet.addRow({
-                id: resp.id,
-                email: resp.email,
-                answer: JSON.stringify(resp.answer),
-                createdAt: resp.createdAt,
+        form.questions.forEach((question) => {
+            columns.push({
+                header: question.title,
+                key: `q${question.id}`,
+                width: 30,
             });
         });
 
+        worksheet.columns = columns;
+
+        // ปรับแต่งสีของแถวหัวข้อ (Header Row)
+        worksheet.getRow(1).eachCell((cell) => {
+            cell.font = { bold: true };
+            cell.alignment = { horizontal: 'center' };
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'DCE775' }, // สีพื้นหลังเขียวอ่อน
+            };
+        });
+
+        // เพิ่มข้อมูลของคำตอบ
+        form.responses.forEach((resp, idx) => {
+            let answers = [];
+
+            try {
+                const fixedAnswer = resp.answer.replace(/\s*"\w+ e"\s*:/g, '"value":');
+                answers = JSON.parse(fixedAnswer);
+            } catch (err) {
+                console.error("Error parsing response answer:", err);
+                answers = [];
+            }
+
+            const answerMap = new Map();
+
+            answers.forEach(({ questionID, value }) => {
+                if (!Array.isArray(value)) return;
+                const qID = Number(questionID);
+                if (!answerMap.has(qID)) {
+                    answerMap.set(qID, new Set());
+                }
+                value.forEach((v) => answerMap.get(qID).add(v));
+            });
+
+            const rowData = {
+                id: `${idx + 1}`,
+                email: resp.email || "Anonymous",
+                createdAt: new Date(resp.createdAt).toISOString(),
+            };
+
+            form.questions.forEach((question) => {
+                const uniqueAnswers = answerMap.has(question.questionID)
+                    ? [...answerMap.get(question.questionID)].join(" / ")
+                    : "N/A";
+                rowData[`q${question.id}`] = uniqueAnswers;
+            });
+
+            const row = worksheet.addRow(rowData);
+
+            // เพิ่มสีพื้นหลังที่นุ่มนวลให้กับแถว
+            row.eachCell((cell) => {
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'F1F8E9' }, // สีเขียวอ่อน
+                };
+                cell.alignment = { horizontal: 'center' };
+            });
+        });
+
+        // ตั้งค่า response header สำหรับการดาวน์โหลดไฟล์ Excel
         res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         res.setHeader("Content-Disposition", `attachment; filename=form_${formID}_responses.xlsx`);
 
@@ -119,4 +183,9 @@ router.get("/form/:formID/export", checkAuth, async (req, res) => {
     }
 });
 
+
+
+
+
 module.exports = router;
+

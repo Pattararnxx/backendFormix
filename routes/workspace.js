@@ -28,7 +28,7 @@ router.get("/getForm", checkAuth, async (req, res) => {
         id: true,
         title: true,
         theme: true,
-        active: true,
+        archive : true,
       },
     });
     if (forms.length === 0) {
@@ -43,12 +43,12 @@ router.get("/getForm", checkAuth, async (req, res) => {
       });
     } else {
       const totalForm = forms.length;
-      const activeForm = forms.filter((form) => form.active).length;
+      const activeForm = forms.filter((form) => form.archive).length;
 
       const formattedForms = forms.map((form) => ({
         id: form.id,
         name: form.title,
-        archive: !form.active,
+        archive: form.archive ,
         proflieId: form.theme,
         status: false,
       }));
