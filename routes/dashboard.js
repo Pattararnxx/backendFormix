@@ -38,7 +38,6 @@ router.get("/stats", checkAuth, async (req, res) => {
     }
 });
 
-//API ดึงข้อมูลคำตอบของฟอร์ม (ใช้สร้างกราฟ)
 router.get("/form/:formID/responses", checkAuth, async (req, res) => {
     try {
         const { formID } = req.params;
@@ -55,25 +54,48 @@ router.get("/form/:formID/responses", checkAuth, async (req, res) => {
             return res.status(404).json({ error: "Form not found." });
         }
 
-        const responseData = form.questions.map((q) => ({
-            id: q.id,
-            type: q.type,
-            title: q.title,
-            options: q.options.map((opt) => ({
-                id: opt.id,
-                text: opt.text,
-                count: form.responses.filter((r) =>
-                    JSON.parse(r.answer).some((a) => a.questionID === q.id && a.value.includes(opt.text))
-                ).length,
-            })),
-        }));
+        const responseData = form.responses.map((resp) => {
+            const seenAnswers = new Set(); // Set สำหรับกรองคำตอบซ้ำ
 
-        res.json({ formID: form.id, title: form.title, responses: responseData });
+            // แปลง JSON ของคำตอบและกรองซ้ำ
+            const filteredAnswers = JSON.parse(resp.answer).filter((ans) => {
+                const key = ans.questionID + ans.value; // สร้าง key จาก questionID และ value
+                if (seenAnswers.has(key)) return false; // ถ้ามีคำตอบซ้ำ ให้ตัดออก
+                seenAnswers.add(key); // เพิ่มคำตอบใหม่เข้า Set
+                return true;
+            });
+
+            return {
+                id: resp.id,
+                email: resp.email || "Anonymous",
+                createdAt: resp.createdAt,
+                answers: filteredAnswers.map((ans) => {
+                    // แทนที่จะใช้การค้นหาแบบตรงๆ จะใช้การจับคู่บางส่วนหรือ `questionID`
+                    const question = form.questions.find((q) => q.questionID === ans.questionID); 
+                    if (!question) {
+                        console.warn(`No match found for questionID: ${ans.questionID}`);
+                    }
+
+                    return {
+                        questionID: ans.questionID,
+                        value: ans.value,
+                        questionTitle: question ? question.title : "Unknown",
+                    };
+                }),
+            };
+        });
+
+        res.json({
+            formID: form.id,
+            title: form.title,
+            responses: responseData,
+        });
     } catch (err) {
         console.error("Error fetching responses:", err);
         res.status(500).json({ error: "Failed to fetch response data" });
     }
 });
+
 
 router.get("/form/:formID/export", checkAuth, async (req, res) => {
     try {
