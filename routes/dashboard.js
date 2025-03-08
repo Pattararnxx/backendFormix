@@ -96,6 +96,73 @@ router.get("/form/:formID/responses", checkAuth, async (req, res) => {
     }
 });
 
+router.get("/form/:formID/graph", checkAuth, async (req, res) => {
+    try {
+        const { formID } = req.params;
+
+        const form = await prisma.form.findUnique({
+            where: { id: formID },
+            include: {
+                questions: { include: { options: true } },
+                responses: true,
+            },
+        });
+
+        if (!form) {
+            return res.status(404).json({ error: "Form not found." });
+        }
+
+        const answerCountMap = new Map();
+
+
+        form.responses.forEach((resp) => {
+            const answers = JSON.parse(resp.answer);
+
+            answers.forEach((ans) => {
+                const key = ans.value; 
+                if (answerCountMap.has(key)) {
+                    answerCountMap.set(key, answerCountMap.get(key) + 1);
+                } else {
+                    answerCountMap.set(key, 1);
+                }
+            });
+        });
+
+        const categorizedData = new Map();
+
+        form.questions.forEach((question) => {
+            form.responses.forEach((resp) => {
+                const answers = JSON.parse(resp.answer);
+
+                answers.forEach((ans) => {
+                    if (ans.questionID === question.questionID) {
+                        const category = question.title; 
+                        if (!categorizedData.has(category)) {
+                            categorizedData.set(category, []);
+                        }
+                        categorizedData.get(category).push({
+                            name: ans.value,
+                            value: answerCountMap.get(ans.value) || 0,
+                        });
+                    }
+                });
+            });
+        });
+
+        const setData = Array.from(categorizedData.values());
+
+        res.json({
+            formID: form.id,
+            title: form.title,
+            setData,
+        });
+    } catch (err) {
+        console.error("Error fetching responses:", err);
+        res.status(500).json({ error: "Failed to fetch response data" });
+    }
+});
+
+
 
 router.get("/form/:formID/export", checkAuth, async (req, res) => {
     try {
