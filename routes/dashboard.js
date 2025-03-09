@@ -55,13 +55,12 @@ router.get("/form/:formID/responses", checkAuth, async (req, res) => {
         }
 
         const responseData = form.responses.map((resp) => {
-            const seenAnswers = new Set(); // Set สำหรับกรองคำตอบซ้ำ
+            const seenAnswers = new Set(); 
 
-            // แปลง JSON ของคำตอบและกรองซ้ำ
             const filteredAnswers = JSON.parse(resp.answer).filter((ans) => {
-                const key = ans.questionID + ans.value; // สร้าง key จาก questionID และ value
-                if (seenAnswers.has(key)) return false; // ถ้ามีคำตอบซ้ำ ให้ตัดออก
-                seenAnswers.add(key); // เพิ่มคำตอบใหม่เข้า Set
+                const key = ans.questionID + ans.value;
+                if (seenAnswers.has(key)) return false;
+                seenAnswers.add(key);
                 return true;
             });
 
@@ -70,7 +69,6 @@ router.get("/form/:formID/responses", checkAuth, async (req, res) => {
                 email: resp.email || "Anonymous",
                 createdAt: resp.createdAt,
                 answers: filteredAnswers.map((ans) => {
-                    // แทนที่จะใช้การค้นหาแบบตรงๆ จะใช้การจับคู่บางส่วนหรือ `questionID`
                     const question = form.questions.find((q) => q.questionID === ans.questionID); 
                     if (!question) {
                         console.warn(`No match found for questionID: ${ans.questionID}`);
@@ -117,39 +115,38 @@ router.get("/form/:formID/graph", checkAuth, async (req, res) => {
 
         form.responses.forEach((resp) => {
             const answers = JSON.parse(resp.answer);
-
             answers.forEach((ans) => {
-                const key = ans.value; 
-                if (answerCountMap.has(key)) {
-                    answerCountMap.set(key, answerCountMap.get(key) + 1);
-                } else {
-                    answerCountMap.set(key, 1);
-                }
+                const key = `${ans.questionID}-${ans.value}`; // ใช้ questionID+value เป็น key
+                answerCountMap.set(key, (answerCountMap.get(key) || 0) + 1);
             });
         });
 
-        const categorizedData = new Map();
+        // สร้างข้อมูลกราฟตามคำถาม
+        const categorizedData = form.questions.map((question) => {
+            const questionData = new Map();
 
-        form.questions.forEach((question) => {
             form.responses.forEach((resp) => {
                 const answers = JSON.parse(resp.answer);
-
                 answers.forEach((ans) => {
                     if (ans.questionID === question.questionID) {
-                        const category = question.title; 
-                        if (!categorizedData.has(category)) {
-                            categorizedData.set(category, []);
-                        }
-                        categorizedData.get(category).push({
-                            name: ans.value,
-                            value: answerCountMap.get(ans.value) || 0,
-                        });
+                        const key = `${ans.questionID}-${ans.value}`;
+                        questionData.set(ans.value, answerCountMap.get(key) || 0);
                     }
                 });
             });
+
+            return {
+                question: question.title,
+                data: Array.from(questionData.entries()).map(([name, value]) => ({
+                    name,
+                    value,
+                })),
+            };
         });
 
+
         const setData = Array.from(categorizedData.values());
+        console.log('setData', setData)
 
         res.json({
             formID: form.id,
@@ -200,18 +197,17 @@ router.get("/form/:formID/export", checkAuth, async (req, res) => {
 
         worksheet.columns = columns;
 
-        // ปรับแต่งสีของแถวหัวข้อ (Header Row)
+
         worksheet.getRow(1).eachCell((cell) => {
             cell.font = { bold: true };
             cell.alignment = { horizontal: 'center' };
             cell.fill = {
                 type: 'pattern',
                 pattern: 'solid',
-                fgColor: { argb: 'DCE775' }, // สีพื้นหลังเขียวอ่อน
+                fgColor: { argb: 'DCE775' }, 
             };
         });
 
-        // เพิ่มข้อมูลของคำตอบ
         form.responses.forEach((resp, idx) => {
             let answers = [];
 
@@ -249,18 +245,16 @@ router.get("/form/:formID/export", checkAuth, async (req, res) => {
 
             const row = worksheet.addRow(rowData);
 
-            // เพิ่มสีพื้นหลังที่นุ่มนวลให้กับแถว
             row.eachCell((cell) => {
                 cell.fill = {
                     type: 'pattern',
                     pattern: 'solid',
-                    fgColor: { argb: 'F1F8E9' }, // สีเขียวอ่อน
+                    fgColor: { argb: 'F1F8E9' }, 
                 };
                 cell.alignment = { horizontal: 'center' };
             });
         });
 
-        // ตั้งค่า response header สำหรับการดาวน์โหลดไฟล์ Excel
         res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         res.setHeader("Content-Disposition", `attachment; filename=form_${formID}_responses.xlsx`);
 

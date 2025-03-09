@@ -2,27 +2,22 @@ const express = require("express");
 const prisma = require("../prisma");
 const router = express.Router();
 
-// บันทึกคำตอบของแบบฟอร์ม
 router.post("/submit", async (req, res) => {
 
     try {
             
-        const { formID, email, answer } = req.body; //ดึง formID และคำตอบจาก req.body
-        // console.log( JSON.stringify(answer,null,2))
+        const { formID, email, answer } = req.body;
         if (!formID || !answer || answer.length === 0) {
             return res.status(400).json({ error: "Form ID and answers are required." });
         }
 
-        //ตรวจสอบว่า `formID` มีอยู่จริง
         const formExists = await prisma.form.findUnique({
             where: { id: formID }
         });
-        // console.log('form', formExists)
         if (!formExists) {
             return res.status(404).json({ error: "Form not found." });
         }
 
-        //ดึงข้อมูลคำถามทั้งหมดของแบบฟอร์มจากฐานข้อมูล
         const questionList = await prisma.question.findMany({
             where: { formID },
             select: { questionID: true, type: true, limitAns: true }
@@ -51,7 +46,7 @@ router.post("/submit", async (req, res) => {
             data: {
                 formID,
                 email,
-                answer: JSON.stringify(answer) //เก็บคำตอบเป็น JSON
+                answer: JSON.stringify(answer)
             }
         });
 
