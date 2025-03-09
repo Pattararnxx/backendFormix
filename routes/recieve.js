@@ -23,6 +23,7 @@ router.get("/public/:formID", async (req, res) => {
             title: form.title,
             description: form.description,
             theme: form.theme,
+            archive:form.archive,
             color: color,
             questions: form.questions.map(q => ({
                 id:q.questionID,
