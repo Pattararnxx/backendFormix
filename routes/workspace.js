@@ -148,4 +148,34 @@ router.delete("/:id", checkAuth, async (req, res) => {
   }
 });
 
+router.patch("/:id/toggleArchive", checkAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userID = req.user.id;
+
+    const form = await prisma.form.findUnique({
+      where: { id: String(id) },
+    });
+
+    if (!form) {
+      return res.status(404).json({ error: "Form not found" });
+    }
+
+    if (form.userID !== userID) {
+      return res.status(403).json({ error: "Unauthorized to modify this form" });
+    }
+
+    const updatedForm = await prisma.form.update({
+      where: { id: String(id) },
+      data: { archive: !form.archive },
+      select: { id: true, archive: true },
+    });
+
+    res.json({ msg: "Form archive status updated", form: updatedForm });
+  } catch (err) {
+    console.error("❌ Error toggling archive status:", err);
+    res.status(500).json({ error: "Failed to update archive status" });
+  }
+});
+
 module.exports = router;
