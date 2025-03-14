@@ -110,14 +110,14 @@ router.post(
 );
 
 router.post(
-  "/forgot-password",
-  [check("email", "Invalid email format").isEmail()],
+  '/forgot-password',
+  [check('email', 'Invalid email format').isEmail()],
   async (req, res) => {
-    console.log("Start forgot-password process");
+    console.log('Start forgot-password process');
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.log("Validation errors:", errors.array());
+      console.log('Validation errors:', errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
 
@@ -126,33 +126,43 @@ router.post(
     try {
       const user = await prisma.user.findUnique({ where: { email } });
 
-
       if (!user) {
-        console.log("Email not found or not registered.");
+        console.log('Email not found or not registered.');
         return res
           .status(200)
-          .json({ msg: "If this email exists, a reset link will be sent." });
+          .json({ msg: 'If this email exists, a reset link will be sent.' });
       }
 
+      // สร้าง token สำหรับ reset password
       const resetToken = JWT.sign({ id: user.id }, process.env.JWT_SECRET, {
-        expiresIn: "15m",
+        expiresIn: '15m',
       });
 
-      const resetURL = `http://formix.com/reset-password/${resetToken}`;
+      // สร้างลิงก์ reset password
+      const resetURL = `http://localhost:3000/resetpassword?token=${resetToken}`;
 
-      await sendEmail({
+      // ตั้งค่าข้อความอีเมล (รูปแบบ HTML)
+      const emailOptions = {
         email: user.email,
-        subject: "Password Reset Request",
-        message: `Click the following link to reset your password:\n\n${resetURL}`,
-      });
+        subject: 'Password Reset Request',
+        message: `
+          <h1>Password Reset Request</h1>
+          <p>Click the link below to reset your password:</p>
+          <a href="${resetURL}">Reset Password</a>
+          <p>If you did not request this, please ignore this email.</p>
+        `,
+      };
 
-      console.log("Reset password email sent successfully");
+      // ส่งอีเมล
+      await sendEmail(emailOptions);
+
+      console.log('Reset password email sent successfully');
       res
         .status(200)
-        .json({ msg: "If this email exists, a reset link will be sent." });
+        .json({ msg: 'If this email exists, a reset link will be sent.' });
     } catch (error) {
-      console.error("Forgot password error:", error);
-      res.status(500).json({ msg: "Server error", error });
+      console.error('Forgot password error:', error);
+      res.status(500).json({ msg: 'Server error', error });
     }
   }
 );
