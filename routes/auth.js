@@ -139,7 +139,7 @@ router.post(
       });
 
       // สร้างลิงก์ reset password
-      const resetURL = `http://localhost:3000/resetpassword?token=${resetToken}`;
+      const resetURL = `http://localhost:3000/newpassword/${encodeURIComponent(resetToken)}`;
 
       // ตั้งค่าข้อความอีเมล (รูปแบบ HTML)
       const emailOptions = {
@@ -168,19 +168,15 @@ router.post(
 );
 
 router.post(
-  "/reset-password/:token",
+  "/newpassword/:token",
   [
-    check(
-      "newPassword",
-      "Password must be at least 6 characters long"
-    ).isLength({ min: 6 }),
+    check("newPassword", "Password must be at least 6 characters long").isLength({ min: 6 }),
     check("confirmNewPassword", "Passwords do not match").custom(
       (value, { req }) => value === req.body.newPassword
     ),
   ],
   async (req, res) => {
     console.log("Start reset-password process");
-
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       console.log("Validation errors:", errors.array());
@@ -191,8 +187,8 @@ router.post(
     const { newPassword } = req.body;
 
     try {
+      // ตรวจสอบ token
       const decoded = JWT.verify(token, process.env.JWT_SECRET);
-
       const user = await prisma.user.findUnique({ where: { id: decoded.id } });
 
       if (!user) {
@@ -200,16 +196,17 @@ router.post(
         return res.status(400).json({ msg: "Invalid or expired token" });
       }
 
+      // เข้ารหัส password ใหม่
       const hashedPassword = await bcrypt.hash(newPassword, 10);
-
       await prisma.user.update({
         where: { id: user.id },
         data: { password: hashedPassword },
       });
 
-      res.json({ msg: "Password reset successful. Please login!" });
+      return res.json({ msg: "Password reset successful. Please login!" });
     } catch (error) {
-      res.status(400).json({ msg: "Invalid or expired token" });
+      console.error("Error during reset-password:", error);
+      return res.status(400).json({ msg: "Invalid or expired token" });
     }
   }
 );
