@@ -8,44 +8,52 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String   @default("user name") 
-  password  String
-  forms Form[]
+  id       Int    @id @default(autoincrement())
+  email    String @unique
+  name     String @default("user name")
+  password String
+  forms    Form[]
 }
+
 model Form {
-  id          String  @id @default(uuid())
+  id          String     @id @default(uuid())
   userID      Int
-  user        User      @relation(fields: [userID], references: [id], onDelete: Cascade)
   title       String
   description String?
-  color       Json 
-  archive     Boolean? @default(true) 
+  color       Json
+  archive     Boolean?   @default(true)
   theme       String
   limitForm   Int?
-  questions Question[]
-  responses Response[] 
+  user        User       @relation(fields: [userID], references: [id], onDelete: Cascade)
+  questions   Question[]
+  responses   Response[]
+
+  @@index([userID], map: "Form_userID_fkey")
 }
+
 model Question {
-  id Int @id @default(autoincrement())
-  formID String
+  id         Int      @id @default(autoincrement())
+  formID     String
   questionID Int
-  form Form @relation(fields: [formID], references: [id], onDelete: Cascade)
-  title String
-  type String
-  required Boolean @default(false)
-  limit Int?
-  limitAns Int? 
-  options Option[]
+  title      String
+  type       String
+  required   Boolean  @default(false)
+  limit      Int?
+  options    Option[]
+  form       Form     @relation(fields: [formID], references: [id], onDelete: Cascade)
+
+  @@index([formID], map: "Question_formID_fkey")
 }
 
 model Option {
-  id         Int       @id @default(autoincrement())
-  text       String    @default("")
+  id         Int      @id @default(autoincrement())
+  text       String   @default("")
+  limitAns   Int?
   questionID Int
-  question   Question  @relation(fields: [questionID], references: [id], onDelete: Cascade)
-} 
+  question   Question @relation(fields: [questionID], references: [id], onDelete: Cascade)
+
+  @@index([questionID], map: "Option_questionID_fkey")
+}
 
 model Response {
   id        Int      @id @default(autoincrement())
@@ -54,4 +62,6 @@ model Response {
   answer    Json
   createdAt DateTime @default(now())
   form      Form     @relation(fields: [formID], references: [id], onDelete: Cascade)
+
+  @@index([formID], map: "Response_formID_fkey")
 }

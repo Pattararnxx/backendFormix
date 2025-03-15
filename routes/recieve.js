@@ -10,11 +10,21 @@ router.get("/public/:formID", async (req, res) => {
             where: { id: formID },
             include: {
                 questions: {
-                    include: {
-                        options: true, // Include options for each question
+                    select: {
+                        questionID: true,
+                        title: true,
+                        type: true,
+                        required: true,
+                        limit: true,
+                        options: {
+                            select: {
+                                id: true,
+                                text: true,
+                            }
+                        }
                     }
                 },
-                responses: true // Include responses for the form to calculate total responses
+                responses: true
             }
         });
 
@@ -41,11 +51,11 @@ router.get("/public/:formID", async (req, res) => {
                 type: q.type,
                 required: q.required,
                 limit: q.limit ?? null,
-                limitAns: q.limitAns ?? 1,
                 options: q.options.length !== 0
                     ? q.options.map(opt => ({
                         id: opt.id,
-                        text: opt.text
+                        text: opt.text,
+                        limitAns: q.limitAns ?? 1
                     }))
                     : null
             }))

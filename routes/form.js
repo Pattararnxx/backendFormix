@@ -37,9 +37,11 @@ router.post("/create", checkAuth, async (req, res) => {
             type: q.type,
             required: q.required,
             limit: q.limit ?? 100,
-            limitAns: q.limitAns ?? 1,
             options: q.options?.create?.length > 0
-              ? { create: q.options.create.map(opt => ({ text: opt.text })) }
+              ? { create: q.options.create.map(opt => ({ text: opt.text,
+                limitAns: opt.limitAns ?? 1
+
+               })) }
               : undefined,
           })),
         },
@@ -137,10 +139,11 @@ router.get("/editor/:formID", async (req, res) => {
                   type: q.type,
                   required: q.required,
                   limit: q.limit ?? 100,
-                  limitAns: q.limitAns ?? 1,
                   options: q.options.map(opt => ({
                         id: opt.id,
-                        text: opt.text })) 
+                        text: opt.text,
+                        limitAns: opt.limitAns ?? 1
+                      })) 
                     }))
             });
 

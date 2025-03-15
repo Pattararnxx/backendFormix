@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon index.js"
+    "dev": "nodemon index.js"
   },
   "keywords": [],
   "author": "",
@@ -23,6 +23,7 @@
     "uuidv4": "^6.2.13"
   },
   "devDependencies": {
+    "nodemon": "^3.1.9",
     "prisma": "^6.4.0"
   },
   "description": ""
