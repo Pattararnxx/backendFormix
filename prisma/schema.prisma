@@ -46,11 +46,12 @@ model Question {
 }
 
 model Option {
-  id         Int      @id @default(autoincrement())
-  text       String   @default("")
-  limitAns   Int?
-  questionID Int
-  question   Question @relation(fields: [questionID], references: [id], onDelete: Cascade)
+  id            Int      @id @default(autoincrement())
+  text          String   @default("")
+  limitAns      Int?
+  questionID    Int
+  question      Question @relation(fields: [questionID], references: [id], onDelete: Cascade)
+  selectionCount Int     @default(0)  
 
   @@index([questionID], map: "Option_questionID_fkey")
 }

@@ -38,9 +38,9 @@ router.post("/create", checkAuth, async (req, res) => {
             required: q.required,
             limit: q.limit ?? 100,
             options: q.options?.create?.length > 0
-              ? { create: q.options.create.map(opt => ({ text: opt.text,
-                limitAns: opt.limitAns ?? 1
-
+              ? { create: q.options.create.map(opt => ({ 
+                text: opt.text,
+                limitAns:opt.limitAns
                })) }
               : undefined,
           })),
@@ -48,7 +48,6 @@ router.post("/create", checkAuth, async (req, res) => {
       },
     });
     
-    console.log('ques',)
     const createdForm = await prisma.form.findUnique({
       where: { id: newForm.id },
       include: { questions: { include: { options: true } } }
