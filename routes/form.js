@@ -16,7 +16,7 @@ router.post("/create", checkAuth, async (req, res) => {
   : [];
   const archive = req.body.archive ?? false;
 
-  if (questions.create.length === 0) {
+  if (questions.length === 0) {
     return res.status(400).json({ error: "At least one question with a title is required" });
   }
 
